@@ -37,7 +37,7 @@ app.get('/get-musics', async (request, response) => {
         ...doc.data(),
       });
     });
-    
+
     let query = db.collection('music');
     if (id) {
       query = db.collection('music').where('id', '==', id);
