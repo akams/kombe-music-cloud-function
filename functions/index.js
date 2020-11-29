@@ -8,7 +8,6 @@ const cors = require('cors')({origin: true});
 admin.initializeApp(functions.config().firebase);
 
 const db = admin.firestore(); // cloudFireStore Db
-const bucket = admin.storage().bucket();
 const app = express(); // Handle intern API
 const main = express(); // Expose API
 
@@ -27,13 +26,24 @@ app.get('/warmup', (req, res) => {
 
 app.get('/get-musics', async (request, response) => {
   try {
+    const bucket = admin.storage().bucket('kombe-music.appspot.com');
     const { id, limit = 10 } = request.query;
 
+    const snapshotAlbums = await db.collection('albums').get();
+    const albums = [];
+    snapshotAlbums.forEach((doc) => {
+      albums.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+    
     let query = db.collection('music');
     if (id) {
       query = db.collection('music').where('id', '==', id);
     }
-    const snapshot = await query.orderBy('createAt', 'desc').limit(limit).get();
+
+    const snapshot = await query.orderBy('uploadAt', 'desc').limit(limit).get();
     const datas = [];
     snapshot.forEach((doc) => {
       datas.push({
@@ -41,8 +51,19 @@ app.get('/get-musics', async (request, response) => {
         ...doc.data(),
       });
     });
+
+    albums.forEach((album) => {
+      datas.forEach((data) => {
+        if (data.album === album.id) {
+          data.albumName = album.name;
+          data.pathName = `${album.name}/${data.fileName}`;
+        } else {
+          data.pathName = data.fileName;
+        }
+      });
+    });
   
-    const reads = datas.map((data) => bucket.file(`music/${data.fileName}`).getMetadata())
+    const reads = datas.map((data) => bucket.file(`music/${data.pathName}`).getMetadata())
     const results = await Promise.all(reads);
     results.forEach((file) => {
       const name = file[0].name;
@@ -58,13 +79,4 @@ app.get('/get-musics', async (request, response) => {
   catch(error) {
     response.status(500).send({ err: error.message });
   }
-
-  // const file = await bucket.file("music/bensound-buddy.mp3").getMetadata();
-  // const [metadata] = await file.getMetadata();
-  // const url = file[0].mediaLink;
-  // response.json({
-  //   msg: 'Warming up serverless.',
-  //   file,
-  //   url,
-  // });
 });
