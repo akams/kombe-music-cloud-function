@@ -65,7 +65,7 @@ async function handleGetAlbums(db, queryBody) {
     if (!db) {
       throw new Error('{db} db is required to continue the process');
     }
-    const { limit = 10 } = queryBody;
+    const { limit = 4 } = queryBody;
 
     const albums = [];
     const snapshot = await db.collection('albums').orderBy('uploadAt', 'desc').limit(limit).get();
