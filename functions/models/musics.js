@@ -4,7 +4,7 @@ async function handleGetMusics(db, bucket, queryBody) {
     if (!bucket || !db) {
       throw new Error('{bucket} bucket or {db} db is required to continue the process');
     }
-    const { id, limit = 10 } = queryBody;
+    const { idAlbum, limit = 10 } = queryBody;
 
     const snapshotAlbums = await db.collection('albums').get();
     const albums = [];
@@ -16,8 +16,8 @@ async function handleGetMusics(db, bucket, queryBody) {
     });
 
     let query = db.collection('music');
-    if (id) {
-      query = db.collection('music').where('id', '==', id);
+    if (idAlbum && idAlbum !== 'all') {
+      query = db.collection('music').where('album', '==', idAlbum);
     }
 
     const snapshot = await query.orderBy('uploadAt', 'desc').limit(limit).get();
@@ -34,13 +34,16 @@ async function handleGetMusics(db, bucket, queryBody) {
         if (data.album === album.id) {
           data.albumName = album.name;
           data.pathName = `${album.name}/${data.fileName}`;
-        } else {
-          data.pathName = data.fileName;
         }
       });
     });
 
-    const reads = datas.map((data) => bucket.file(`music/${data.pathName}`).getMetadata())
+    const reads = datas.map((data) => {
+      if (data.pathName) {
+        return bucket.file(`music/${data.pathName}`).getMetadata()
+      }
+      return bucket.file(`music/${data.fileName}`).getMetadata()
+    })
     const results = await Promise.all(reads);
     results.forEach((file) => {
       const name = file[0].name;
