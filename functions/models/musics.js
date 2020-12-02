@@ -1,10 +1,11 @@
 
-async function handleGetMusics(db, bucket, queryBody) {
+async function handleGetMusics(db, optionsStorage, queryBody) {
   try {
-    if (!bucket || !db) {
-      throw new Error('{bucket} bucket or {db} db is required to continue the process');
+    if (!optionsStorage || !db) {
+      throw new Error('{optionsStorage} storage or {db} db is required to continue the process');
     }
     const { idAlbum, limit = 10 } = queryBody;
+    const { storage, options } = optionsStorage;
 
     const snapshotAlbums = await db.collection('albums').get();
     const albums = [];
@@ -20,7 +21,7 @@ async function handleGetMusics(db, bucket, queryBody) {
       query = db.collection('music').where('album', '==', idAlbum);
     }
 
-    const snapshot = await query.orderBy('uploadAt', 'desc').limit(limit).get();
+    const snapshot = await query.orderBy('uploadAt', 'desc').limit(parseInt(limit)).get();
     const datas = [];
     snapshot.forEach((doc) => {
       datas.push({
@@ -40,17 +41,25 @@ async function handleGetMusics(db, bucket, queryBody) {
 
     const reads = datas.map((data) => {
       if (data.pathName) {
-        return bucket.file(`music/${data.pathName}`).getMetadata()
+        return storage
+          .bucket('kombe-music.appspot.com')
+          .file(`music/${data.pathName}`)
+          .getSignedUrl(options);
       }
-      return bucket.file(`music/${data.fileName}`).getMetadata()
+      return storage
+          .bucket('kombe-music.appspot.com')
+          .file(`music/${data.fileName}`)
+          .getSignedUrl(options);
     })
     const results = await Promise.all(reads);
-    results.forEach((file) => {
-      const name = file[0].name;
-      const audioUrl = file[0].mediaLink;
+    results.forEach((res) => {
+      const url = res[0];
       datas.forEach((data) => {
-        if (name.indexOf(data.fileName) !== -1) {
-          data.audioUrl = audioUrl;
+        const c = data.fileName.split(" ");
+        const foundSize = c.filter((cc) => url.search(cc) !== -1).length;
+        console.log
+        if (foundSize === c.length) {
+          data.audioUrl = url;
         }
       });
     });

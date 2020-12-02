@@ -4,7 +4,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser')();
 const cors = require('cors')({origin: true});
+const path = require('path');
 const modelMusics = require('./models/musics');
+const gcs = require('@google-cloud/storage')
 
 admin.initializeApp(functions.config().firebase);
 
@@ -26,10 +28,20 @@ app.get('/warmup', (req, res) => {
 
 app.get('/get-musics', async (request, response) => {
   try {
-    const bucket = admin.storage().bucket('kombe-music.appspot.com');
     const db = admin.firestore();
+    const keyPath = path.resolve('./lib/key.json');
+    const storage = new gcs.Storage({ keyFilename: keyPath });
 
-    const data = await modelMusics.handleGetMusics(db, bucket, request.query)
+    const options = {
+      version: 'v2',
+      action: 'read',
+      expires: Date.now() + 1000 * 60 * 60,
+    };
+    const optionsStorage = {
+      storage,
+      options,
+    };
+    const data = await modelMusics.handleGetMusics(db, optionsStorage, request.query)
     response.json(data);
   }
   catch(error) {
