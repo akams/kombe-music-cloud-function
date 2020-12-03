@@ -104,7 +104,11 @@ async function handleGetAlbums(db, queryBody) {
     if (!db) {
       throw new Error('{db} db is required to continue the process');
     }
-    const { limit = 4 } = queryBody;
+    let { limit = 3 } = queryBody;
+
+    if (typeof limit === 'string') {
+      limit = parseInt(limit);
+    }
 
     const albums = [];
     const snapshot = await db.collection('albums').orderBy('uploadAt', 'desc').limit(limit).get();
@@ -116,7 +120,7 @@ async function handleGetAlbums(db, queryBody) {
     });
     return albums;
   } catch (error) {
-    return error;
+    throw error;
   }
 }
 
