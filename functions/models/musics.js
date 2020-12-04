@@ -35,9 +35,12 @@ async function getMusicsByAlbums(db, queryBody) {
     });
   
     // last item
-    const last = {
-      ...datas[datas.length - 1],
-    };
+    let last = {};
+    if (datas.length !== 0) {
+      last = {
+        [field]: datas[datas.length - 1][field],
+      };
+    }
 
     // rajoute nouvelle key
     datas = datas.map((d) => {
