@@ -60,7 +60,7 @@ async function handleGetMusics(db, optionsStorage, queryBody) {
           }
         }
         return undefined;
-      });
+      }).filter((v) => typeof v !== "undefined");
       return {
         ...d,
         ...o[0],
