@@ -4,9 +4,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser')();
 const cors = require('cors')({origin: true});
-const path = require('path');
-const modelMusics = require('./models/musics');
-const gcs = require('@google-cloud/storage')
+
+const ctrlMusics = require('./controller/musics');
+const ctrlAlbums = require('./controller/albums');
 
 admin.initializeApp(functions.config().firebase);
 
@@ -29,19 +29,8 @@ app.get('/warmup', (req, res) => {
 app.get('/get-musics', async (request, response) => {
   try {
     const db = admin.firestore();
-    const keyPath = path.resolve('./lib/key.json');
-    const storage = new gcs.Storage({ keyFilename: keyPath });
 
-    const options = {
-      version: 'v2',
-      action: 'read',
-      expires: Date.now() + 1000 * 60 * 60,
-    };
-    const optionsStorage = {
-      storage,
-      options,
-    };
-    const data = await modelMusics.handleGetMusics(db, optionsStorage, request.query)
+    const data = await ctrlMusics.handleGetMusics(db, request.query)
     response.json(data);
   }
   catch(error) {
@@ -52,7 +41,7 @@ app.get('/get-musics', async (request, response) => {
 app.get('/get-albums', async (request, response) => {
   try {
     const db = admin.firestore();
-    const data = await modelMusics.handleGetAlbums(db, request.query)
+    const data = await ctrlAlbums.handleGetAlbums(db, request.query)
     response.json(data);
   }
   catch(error) {

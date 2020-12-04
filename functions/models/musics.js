@@ -1,33 +1,22 @@
+const modelAlbums = require('./albums');
 
-async function handleGetMusics(db, optionsStorage, queryBody) {
+async function getMusicsByAlbums(db, queryBody) {
   try {
-    if (!optionsStorage || !db) {
-      throw new Error('{optionsStorage} storage or {db} db is required to continue the process');
-    }
     const { idAlbum, limit = 9, lastVisible } = queryBody;
-    const { storage, options } = optionsStorage;
     const field = 'uploadAt';
-
     // Recupère les albums
-    const snapshotAlbums = await db.collection('albums').get();
-    const albums = [];
-    snapshotAlbums.forEach((doc) => {
-      albums.push({
-        id: doc.id,
-        ...doc.data(),
-      });
-    });
-
+    const albums  = await modelAlbums.getAlbums(db);
+  
     // Recupère les musics
     let query = db.collection('music');
     // filtre par id
     if (idAlbum && idAlbum !== 'all') {
       query = db.collection('music').where('album', '==', idAlbum);
     }
-
+  
     // order by par date
     query = query.orderBy(field, 'desc');
-
+  
     // start pagination by par date
     if(lastVisible) {
       const parse = JSON.parse(lastVisible);
@@ -35,7 +24,7 @@ async function handleGetMusics(db, optionsStorage, queryBody) {
       parse[field] = time;
       query = query.startAfter(parse[field]);
     }
-
+  
     const snapshot = await query.limit(parseInt(limit)).get();
     let datas = [];
     snapshot.forEach((doc) => {
@@ -44,7 +33,7 @@ async function handleGetMusics(db, optionsStorage, queryBody) {
         ...doc.data(),
       });
     });
-
+  
     // last item
     const last = {
       ...datas[datas.length - 1],
@@ -67,18 +56,33 @@ async function handleGetMusics(db, optionsStorage, queryBody) {
       }
     });
 
+    return {datas, last};
+  } catch (error) {
+    throw error;
+  }
+} 
+
+async function getMusics(db, storage, optionsStorage, queryBody) {
+  try {
+    if (!db) {
+      throw new Error('{db} db is required to continue the process');
+    }
+
+    // Recupère les musics
+    let { datas, last}  = await getMusicsByAlbums(db, queryBody);
+
     // récupère les paths file 
     const reads = datas.map((data) => {
       if (data.pathName) {
         return storage
           .bucket('kombe-music.appspot.com')
           .file(`music/${data.pathName}`)
-          .getSignedUrl(options);
+          .getSignedUrl(optionsStorage);
       }
       return storage
           .bucket('kombe-music.appspot.com')
           .file(`music/${data.fileName}`)
-          .getSignedUrl(options);
+          .getSignedUrl(optionsStorage);
     })
 
     // ajoute lurl signer pour chaque element avec le même nom
@@ -99,30 +103,4 @@ async function handleGetMusics(db, optionsStorage, queryBody) {
   }
 }
 
-async function handleGetAlbums(db, queryBody) {
-  try {
-    if (!db) {
-      throw new Error('{db} db is required to continue the process');
-    }
-    let { limit = 3 } = queryBody;
-
-    if (typeof limit === 'string') {
-      limit = parseInt(limit);
-    }
-
-    const albums = [];
-    const snapshot = await db.collection('albums').orderBy('uploadAt', 'desc').limit(limit).get();
-    snapshot.forEach((doc) => {
-      albums.push({
-        id: doc.id,
-        ...doc.data(),
-      });
-    });
-    return albums;
-  } catch (error) {
-    throw error;
-  }
-}
-
-exports.handleGetMusics = handleGetMusics;
-exports.handleGetAlbums = handleGetAlbums;
+exports.getMusics = getMusics;
