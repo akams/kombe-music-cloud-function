@@ -19,4 +19,20 @@ async function getAlbums(db, limit) {
   }
 }
 
+async function getAlbumByDocumentId(db, id) {
+  try {
+    const doc = await db.collection('albums').doc(id).get();
+    if (doc.exists) {
+      return {
+        id: doc.id,
+        ...doc.data(),
+      };
+    }
+    return {};
+  } catch (error) {
+    throw error;
+  }
+}
+
 exports.getAlbums = getAlbums;
+exports.getAlbumByDocumentId = getAlbumByDocumentId;

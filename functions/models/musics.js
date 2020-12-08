@@ -63,7 +63,49 @@ async function getMusicsByAlbums(db, queryBody) {
   } catch (error) {
     throw error;
   }
-} 
+}
+
+async function getMusicTagIdDocument(db, queryBody) {
+  try {
+    const { id } = queryBody;
+  
+    // Recupère les musics
+    const query = db.collection('music').doc(id)
+    const doc = await query.get();
+    let datas = [];
+    if (doc.exists) {
+      datas.push({
+        id: doc.id,
+        ...doc.data()
+      })
+    } else {
+      console.log("No such document!");
+    }
+    const albumId = datas[0].album;
+    // Recupère les albums
+    const album  = await modelAlbums.getAlbumByDocumentId(db, albumId);
+
+    // rajoute nouvelle key
+    datas = datas.map((data) => {
+      if (data.album === album.id) {
+        return {
+          albumName: album.name,
+          pathName: `${album.name}/${data.fileName}`,
+          ...data,
+        };
+      }
+      return {
+        ...data,
+      };
+    });
+
+    return datas;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
 
 async function getMusics(db, storage, optionsStorage, queryBody) {
   try {
@@ -106,4 +148,46 @@ async function getMusics(db, storage, optionsStorage, queryBody) {
   }
 }
 
+async function getMusicById(db, storage, optionsStorage, queryBody) {
+  try {
+    if (!db) {
+      throw new Error('{db} db is required to continue the process');
+    }
+
+    // Recupère la music
+    let datas = await getMusicTagIdDocument(db, queryBody);
+
+    // récupère les paths file 
+    const reads = datas.map((data) => {
+      if (data.pathName) {
+        return storage
+          .bucket('kombe-music.appspot.com')
+          .file(`music/${data.pathName}`)
+          .getSignedUrl(optionsStorage);
+      }
+      return storage
+          .bucket('kombe-music.appspot.com')
+          .file(`music/${data.fileName}`)
+          .getSignedUrl(optionsStorage);
+    })
+
+    // // ajoute lurl signer pour chaque element avec le même nom
+    const results = await Promise.all(reads);
+    results.forEach((res) => {
+      const url = res[0];
+      datas.forEach((data) => {
+        const c = data.fileName.split(" ");
+        const foundSize = c.filter((cc) => url.search(cc) !== -1).length;
+        if (foundSize === c.length) {
+          data.audioUrl = url;
+        }
+      });
+    });
+    return { datas };
+  } catch (error) {
+    throw error;
+  }
+}
+
 exports.getMusics = getMusics;
+exports.getMusicById = getMusicById;

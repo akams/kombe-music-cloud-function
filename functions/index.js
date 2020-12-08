@@ -38,6 +38,18 @@ app.get('/get-musics', async (request, response) => {
   }
 });
 
+app.get('/get-music', async (request, response) => {
+  try {
+    const db = admin.firestore();
+
+    const data = await ctrlMusics.handleGetMusicById(db, request.query)
+    response.json(data);
+  }
+  catch(error) {
+    response.status(500).send({ err: error.message });
+  }
+});
+
 app.get('/get-albums', async (request, response) => {
   try {
     const db = admin.firestore();
