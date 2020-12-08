@@ -24,7 +24,7 @@ async function handleGetMusics(db, queryBody) {
   }
 }
 
-async function handleGetMusicById(db, queryBody) {
+async function handleGetMusicByQuery(db, queryBody) {
   try {
     if (!db) {
       throw new Error('{db} db is required to continue the process');
@@ -39,7 +39,16 @@ async function handleGetMusicById(db, queryBody) {
       expires: Date.now() + 1000 * 60 * 60,
     };
 
-    const data = modelMusics.getMusicById(db, storage, options, queryBody);
+    const { id, author, albumName } = queryBody;
+    let data = {};
+
+    if (id) {
+      data = modelMusics.getMusicById(db, storage, options, queryBody);
+    } else if (author) {
+      data = modelMusics.getMusicByAuthor(db, storage, options, queryBody);
+    }  else if (albumName) {
+      data = modelMusics.getMusicByAlbumName(db, storage, options, queryBody);
+    }
     return data;
   } catch (error) {
     throw error;
@@ -47,4 +56,4 @@ async function handleGetMusicById(db, queryBody) {
 }
 
 exports.handleGetMusics = handleGetMusics;
-exports.handleGetMusicById = handleGetMusicById;
+exports.handleGetMusicByQuery = handleGetMusicByQuery;

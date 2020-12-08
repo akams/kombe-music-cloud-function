@@ -42,7 +42,7 @@ app.get('/get-music', async (request, response) => {
   try {
     const db = admin.firestore();
 
-    const data = await ctrlMusics.handleGetMusicById(db, request.query)
+    const data = await ctrlMusics.handleGetMusicByQuery(db, request.query)
     response.json(data);
   }
   catch(error) {

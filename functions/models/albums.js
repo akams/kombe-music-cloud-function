@@ -34,5 +34,22 @@ async function getAlbumByDocumentId(db, id) {
   }
 }
 
+async function getAlbumByName(db, name) {
+  try {
+    const snapshot = await db.collection('albums').where('name', '==', name).get();
+    let album = {};
+    snapshot.forEach((doc) => {
+      album = {
+        id: doc.id,
+        ...doc.data(),
+      }
+    });
+    return album;
+  } catch (error) {
+    throw error;
+  }
+}
+
 exports.getAlbums = getAlbums;
 exports.getAlbumByDocumentId = getAlbumByDocumentId;
+exports.getAlbumByName = getAlbumByName;
