@@ -60,3 +60,14 @@ app.get('/get-albums', async (request, response) => {
     response.status(500).send({ err: error.message });
   }
 });
+
+app.get('/get-albums-by-author', async (request, response) => {
+  try {
+    const db = admin.firestore();
+    const data = await ctrlAlbums.handleGetAlbumsByAuthor(db, request.query)
+    response.json(data);
+  }
+  catch(error) {
+    response.status(500).send({ err: error.message });
+  }
+});

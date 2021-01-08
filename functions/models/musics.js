@@ -396,7 +396,25 @@ async function getMusicByAlbumName(db, storage, optionsStorage, queryBody) {
   }
 }
 
+async function getMusicsAuthor(db, name) {
+  try {
+    const snapshot = await db.collection('music').where('author', '==', name).get();
+    let music = [];
+    console.log({size: snapshot.size})
+    snapshot.forEach((doc) => {
+      music.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+    return music;
+  } catch (error) {
+    throw error;
+  }
+}
+
 exports.getMusics = getMusics;
 exports.getMusicById = getMusicById;
 exports.getMusicByAuthor = getMusicByAuthor;
 exports.getMusicByAlbumName = getMusicByAlbumName;
+exports.getMusicsAuthor = getMusicsAuthor;
